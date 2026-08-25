@@ -83,13 +83,33 @@ powershell.exe -NoProfile -File C:\KEIBA_AI\local_odds_downloader\scripts\get_ra
 1. UmaConn通常キャッシュの`RA*.nvd`
 2. PC-KEIBA PostgreSQL `public.nvd_ra`のread-only SELECT
 
-出力には`post_datetime`と`race_key`が含まれ、将来の30分前・15分前・5分前スケジュール計算に利用できます。スケジューラ登録や自動実行は含みません。
+出力には`post_datetime`と`race_key`が含まれ、30分前・15分前・5分前の取得スケジュール計算に利用します。
 
 地方RAでは、外側の`.nvd`ファイル名の日付と内部レコードの開催日が一致しない場合があります。開催日の判定では、固定長RAレコード内部の開催日を正としてください。
 
 現行実働ロジックをそのまま保存しているため、`get_race_schedule.ps1`の候補ファイル探索は最初に`RANV<指定日>*.nvd`を使用します。将来日レースがそれ以前の日付名のRAファイルに収録されている場合、現行版はPostgreSQL fallbackを使用します。RA探索を拡張する際も、最終判定は必ず内部RAレコードの開催日で行ってください。
 
 PostgreSQL fallbackは`default_transaction_read_only=on`でSELECTのみ実行します。接続資格情報はローカルの`pgpass.conf`を使用し、このリポジトリには含めません。
+
+## 日次スケジューラ
+
+当日のRACEスケジュールから、各レースの30分前・15分前・5分前に既存ダウンローダーを自動実行します。
+
+- 起動時点より過去の予定は`SKIPPED`とし、遡及取得しません。
+- 取得中はコンソールとタイトルに`ODDS DOWNLOADING`を表示します。
+- 対象開催の最終レース発走10分後に自動終了します。
+
+通常起動:
+
+```bat
+02_run_daily_scheduler.bat
+```
+
+dry-run:
+
+```bat
+02_run_daily_scheduler.bat -DryRun
+```
 
 ## 安全設計
 
