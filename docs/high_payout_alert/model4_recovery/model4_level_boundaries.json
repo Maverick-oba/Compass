@@ -1,0 +1,34 @@
+{
+  "boundary_source": "np.quantile(saved_2024_M4_all_risk, [0, .2, .4, .6, .8, 1])",
+  "side_assignment": "np.searchsorted(edges[1:-1], risk, side='right') + 1",
+  "edges": [
+    0.0136594811656003,
+    0.06089858867728884,
+    0.09592604115132478,
+    0.12326111568173831,
+    0.15326980011381883,
+    0.3348625453421733
+  ],
+  "levels": [
+    "LOW",
+    "NORMAL",
+    "WATCH",
+    "HIGH",
+    "EXTREME"
+  ],
+  "recomputed_2024_counts": {
+    "LOW": 666,
+    "NORMAL": 665,
+    "WATCH": 665,
+    "HIGH": 665,
+    "EXTREME": 666
+  },
+  "m5_2024_counts": {
+    "LOW": 666,
+    "NORMAL": 665,
+    "WATCH": 665,
+    "HIGH": 665,
+    "EXTREME": 666
+  },
+  "counts_match_m5": true
+}

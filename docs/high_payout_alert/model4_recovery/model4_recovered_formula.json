@@ -1,0 +1,131 @@
+{
+  "model": "M4_all",
+  "recovery_method": "least-squares inverse of logit(saved 2024 risk); no y, max_payout, or 2025 values used to estimate coefficients",
+  "feature_order": [
+    "field_size",
+    "fav_odds",
+    "market_entropy",
+    "ai_gap15",
+    "ai_top3_sum",
+    "top5_overlap",
+    "rank_spearman"
+  ],
+  "raw_intercept": -3.487315220201205,
+  "raw_coefficients": {
+    "field_size": 0.16347048794302999,
+    "fav_odds": 0.17689815936961914,
+    "market_entropy": -0.2765081753818893,
+    "ai_gap15": -0.6267133339979786,
+    "ai_top3_sum": -0.38328382955218443,
+    "top5_overlap": -0.05308462332976345,
+    "rank_spearman": -0.010295071910830358
+  },
+  "stored_standardized_coefficients": {
+    "field_size": 0.4728927976108958,
+    "fav_odds": 0.1753856979955736,
+    "market_entropy": -0.1408438611282487,
+    "ai_gap15": -0.0727485655995824,
+    "ai_top3_sum": -0.1138872395509799,
+    "top5_overlap": -0.0420903759219742,
+    "rank_spearman": -0.0015606686719274
+  },
+  "sigmoid": "risk = 1 / (1 + exp(-(raw_intercept + sum(raw_coefficient_i * feature_i))))",
+  "source_files": {
+    "m3_rows": "C:\\KEIBA_AI\\central_pckeiba_ai_lab\\output\\analysis\\quinella_100x_structure_phase_m3\\race_level_rows_for_m4.csv",
+    "m4_2024_risk": "C:\\KEIBA_AI\\central_pckeiba_ai_lab\\output\\analysis\\quinella_100x_structure_phase_m4\\prediction_rows_2024.csv",
+    "m4_2025_risk": "C:\\KEIBA_AI\\central_pckeiba_ai_lab\\output\\analysis\\quinella_100x_structure_phase_m4\\prediction_rows_2025.csv",
+    "m4_standardized_coefficients": "C:\\KEIBA_AI\\central_pckeiba_ai_lab\\output\\analysis\\quinella_100x_structure_phase_m4\\model_coefficients.csv",
+    "m5_level_summary": "C:\\KEIBA_AI\\central_pckeiba_ai_lab\\output\\analysis\\quinella_100x_structure_phase_m5\\alert_level_summary.csv"
+  },
+  "linear_system": {
+    "2024_rows": 3327,
+    "design_matrix_rank": 8,
+    "singular_values": [
+      861.367078626079,
+      74.049973912,
+      59.56324893453483,
+      18.611847014832176,
+      13.58749403278818,
+      6.860661235268347,
+      5.514330335695412,
+      5.3700894044253475
+    ]
+  },
+  "reproduction_error": {
+    "2024": {
+      "max_absolute_error": 5.6066262743570405e-15,
+      "mean_absolute_error": 1.7652550262801729e-15,
+      "rmse": 2.0582214282691448e-15,
+      "exact_float64_equal_count": 0,
+      "within_1e_12_count": 3327,
+      "within_1e_10_count": 3327
+    },
+    "2025_fixed_formula_check": {
+      "max_absolute_error": 5.662137425588298e-15,
+      "mean_absolute_error": 1.8527975464044853e-15,
+      "rmse": 2.1450146888119444e-15,
+      "exact_float64_equal_count": 2,
+      "within_1e_12_count": 3335,
+      "within_1e_10_count": 3335
+    }
+  },
+  "coefficient_consistency": [
+    {
+      "feature": "field_size",
+      "raw_coefficient": 0.16347048794302999,
+      "stored_standardized_coefficient": 0.4728927976108958,
+      "implied_standard_scaler_scale": 2.8928328505124457,
+      "reconstructed_standardized_coefficient": 0.4728927976108958,
+      "standardized_coefficient_error": 0.0
+    },
+    {
+      "feature": "fav_odds",
+      "raw_coefficient": 0.17689815936961914,
+      "stored_standardized_coefficient": 0.1753856979955736,
+      "implied_standard_scaler_scale": 0.9914501011235208,
+      "reconstructed_standardized_coefficient": 0.1753856979955736,
+      "standardized_coefficient_error": 0.0
+    },
+    {
+      "feature": "market_entropy",
+      "raw_coefficient": -0.2765081753818893,
+      "stored_standardized_coefficient": -0.1408438611282487,
+      "implied_standard_scaler_scale": 0.5093659922847752,
+      "reconstructed_standardized_coefficient": -0.1408438611282487,
+      "standardized_coefficient_error": 0.0
+    },
+    {
+      "feature": "ai_gap15",
+      "raw_coefficient": -0.6267133339979786,
+      "stored_standardized_coefficient": -0.0727485655995824,
+      "implied_standard_scaler_scale": 0.1160794922544556,
+      "reconstructed_standardized_coefficient": -0.0727485655995824,
+      "standardized_coefficient_error": 0.0
+    },
+    {
+      "feature": "ai_top3_sum",
+      "raw_coefficient": -0.38328382955218443,
+      "stored_standardized_coefficient": -0.1138872395509799,
+      "implied_standard_scaler_scale": 0.2971355188243705,
+      "reconstructed_standardized_coefficient": -0.11388723955097992,
+      "standardized_coefficient_error": -1.3877787807814457e-17
+    },
+    {
+      "feature": "top5_overlap",
+      "raw_coefficient": -0.05308462332976345,
+      "stored_standardized_coefficient": -0.0420903759219742,
+      "implied_standard_scaler_scale": 0.7928920520073652,
+      "reconstructed_standardized_coefficient": -0.0420903759219742,
+      "standardized_coefficient_error": 0.0
+    },
+    {
+      "feature": "rank_spearman",
+      "raw_coefficient": -0.010295071910830358,
+      "stored_standardized_coefficient": -0.0015606686719274,
+      "implied_standard_scaler_scale": 0.15159376111647996,
+      "reconstructed_standardized_coefficient": -0.0015606686719274003,
+      "standardized_coefficient_error": -2.168404344971009e-19
+    }
+  ],
+  "fixed_2024_level_boundaries_file": "model4_level_boundaries.json"
+}
