@@ -1,0 +1,4 @@
+year,total_13_14_races,total_13_14_100x,b_gate_rule,b_gate_races,b_gate_100x,b8_100x_hits
+2024,588,63,"field_size in (13,14) AND ai_top3_sum < 1.30",297,34,7
+2025,582,59,"field_size in (13,14) AND ai_top3_sum < 1.30",290,32,7
+2026,429,55,"field_size in (13,14) AND ai_top3_sum < 1.30",220,34,9
