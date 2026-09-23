@@ -133,6 +133,24 @@ Readerの列・選択規則・未確定領域は`docs/research/local_odds_archiv
 
 処理済み状態は`processed_races.csv`で管理します。RTDセットに追加・変更がなければ`SKIPPED`となり、C3レースが更新された場合はそのrace_idの既存行だけを安全に置換します。T-minusはT-120/T-90/T-60/T-45/T-30/T-15/T-5で、選択規則は`strict_prior_minute_latest_record`です。archive、RTD、取得サービス、スケジューラは変更しません。
 
+## C3確定結果データセット
+
+`03_build_c3_odds_research_dataset.bat`の実行後、次のBATをダブルクリックすると、`c3_snapshot_manifest.csv`に存在するC3レースの確定結果を更新できます。
+
+```bat
+04_build_c3_race_results.bat
+```
+
+出力先:
+
+```text
+analysis\c3_odds_research\c3_race_results.csv
+```
+
+レース情報は`public.nvd_ra`、着順・人気は`public.nvd_se`、馬連確定払戻は`public.nvd_hr`からread-only SELECTで取得します。照合キーは`YYYYMMDDJJRR`です。確定済みの`FINAL`/`FINAL_SPECIAL`は次回以降`SKIPPED`となり、`PENDING`と`ERROR`だけを再確認します。同一内容ならCSVを書き換えません。
+
+馬連払戻はDBの3枠を保持します。不成立・特払・返還、同着、複数払戻などは勝手に除外せず、元フラグと`special_case_flag`、`FINAL_SPECIAL`で識別します。生成CSVはGit管理対象外です。
+
 ## 安全設計
 
 - COM生成と`NVRTOpen`は30秒、取得プロセス全体は180秒で監視します。
