@@ -25,10 +25,10 @@ C:\UmaConn\chiho.k-ba\data\
 
 | 場コード | 競馬場 |
 |---:|---|
-| 42 | 川崎 |
+| 42 | 浦和 (Urawa) |
 | 43 | 船橋 |
 | 44 | 大井 |
-| 45 | 浦和 |
+| 45 | 川崎 (Kawasaki) |
 
 静的に確認済みの上記4場だけを許可しています。
 
@@ -110,6 +110,19 @@ dry-run:
 ```bat
 02_run_daily_scheduler.bat -DryRun
 ```
+
+## RTD研究Reader
+
+独立した研究用Readerで、保存済みRTD内のO1/O2全snapshotを縦持ちCSVへ出力できます。発走時刻を指定するとT-120/T-90/T-60/T-45/T-30/T-15/T-5も抽出します。指定時刻以前の最も新しいsnapshotだけを採用し、未来側は使いません。出力名が既存の場合はsuffixを付け、上書きを防ぎます。
+
+```powershell
+python scripts\research\decode_local_odds_archive.py `
+  --input archive\20260923\42\01R `
+  --output-dir research\decoded `
+  --post-time 202609234201=13:30
+```
+
+Readerの列・選択規則・未確定領域は`docs/research/local_odds_archive_reader.md`とO1/O2 layout文書に記載しています。生成CSVは`.gitignore`対象です。
 
 ## 安全設計
 

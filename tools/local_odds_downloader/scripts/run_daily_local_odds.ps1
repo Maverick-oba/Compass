@@ -14,10 +14,10 @@ $x86PowerShell = 'C:\Windows\SysWOW64\WindowsPowerShell\v1.0\powershell.exe'
 $logDirectory = Join-Path $root 'logs'
 $logPath = Join-Path $logDirectory ("scheduler_{0}.log" -f $Date)
 $trackNames = @{
-    '42' = '川崎'
+    '42' = '浦和'
     '43' = '船橋'
     '44' = '大井'
-    '45' = '浦和'
+    '45' = '川崎'
 }
 $mutex = $null
 $mutexOwned = $false

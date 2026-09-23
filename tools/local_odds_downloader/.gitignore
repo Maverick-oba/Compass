@@ -1,5 +1,6 @@
 logs/**
 archive/**
+research/decoded/**
 
 *.rtd
 *.nvO1
