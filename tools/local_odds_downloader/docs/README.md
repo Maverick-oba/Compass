@@ -124,6 +124,15 @@ python scripts\research\decode_local_odds_archive.py `
 
 Readerの列・選択規則・未確定領域は`docs/research/local_odds_archive_reader.md`とO1/O2 layout文書に記載しています。生成CSVは`.gitignore`対象です。
 
+## C3研究データの普段の作り方
+
+1. Local Odds Serviceを通常運用します。
+2. 当日の取得終了後に`03_build_c3_odds_research_dataset.bat`をダブルクリックします。
+3. archiveのうち新規または更新されたレースだけを確認し、`public.nvd_ra`の競走条件名に`Ｃ３`または`C3`が明示されたレースだけを処理します。
+4. `analysis\c3_odds_research`のCSVを研究に使用します。
+
+処理済み状態は`processed_races.csv`で管理します。RTDセットに追加・変更がなければ`SKIPPED`となり、C3レースが更新された場合はそのrace_idの既存行だけを安全に置換します。T-minusはT-120/T-90/T-60/T-45/T-30/T-15/T-5で、選択規則は`strict_prior_minute_latest_record`です。archive、RTD、取得サービス、スケジューラは変更しません。
+
 ## 安全設計
 
 - COM生成と`NVRTOpen`は30秒、取得プロセス全体は180秒で監視します。

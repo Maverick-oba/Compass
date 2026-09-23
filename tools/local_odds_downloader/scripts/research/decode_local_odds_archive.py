@@ -48,6 +48,7 @@ O1_COLUMNS = [
     "snapshot_time",
     "horse_no",
     "win_odds",
+    "raw_odds",
 ]
 O2_COLUMNS = [
     "race_date",
@@ -59,6 +60,7 @@ O2_COLUMNS = [
     "horse_no_1",
     "horse_no_2",
     "quinella_odds",
+    "raw_odds",
 ]
 TARGET_COLUMNS = [
     "target_minutes_before",
@@ -82,6 +84,7 @@ class Snapshot:
     race_no: str
     race_id: str
     snapshot_dt: datetime
+    source_ordinal: int
     rows: tuple[dict[str, str], ...]
     body: bytes
 
@@ -151,6 +154,10 @@ def make_snapshot_time(race_date: str, raw_timestamp: str) -> datetime:
 
 
 def decimal_odds(raw: str, width: int, label: str) -> str:
+    if raw == "-" * width:
+        # The formal meaning of this marker is not confirmed. Preserve it in
+        # raw_odds and expose no numeric odds instead of guessing its meaning.
+        return ""
     if not re.fullmatch(rf"\d{{{width}}}", raw):
         raise ValueError(f"invalid {label} raw field {raw!r}")
     integer = int(raw)
@@ -185,7 +192,7 @@ def base_metadata(body: bytes) -> dict[str, str | datetime]:
     }
 
 
-def parse_o1(body: bytes) -> Snapshot:
+def parse_o1(body: bytes, source_ordinal: int) -> Snapshot:
     if len(body) != O1_LENGTH:
         raise ValueError(f"O1 body length {len(body)} != {O1_LENGTH}")
     metadata = base_metadata(body)
@@ -210,6 +217,7 @@ def parse_o1(body: bytes) -> Snapshot:
                 "snapshot_time": str(metadata["snapshot_time"]),
                 "horse_no": str(int(horse_raw)),
                 "win_odds": odds,
+                "raw_odds": odds_raw,
             }
         )
     return Snapshot(
@@ -219,12 +227,13 @@ def parse_o1(body: bytes) -> Snapshot:
         race_no=str(metadata["race_no"]),
         race_id=str(metadata["race_id"]),
         snapshot_dt=metadata["snapshot_dt"],  # type: ignore[arg-type]
+        source_ordinal=source_ordinal,
         rows=tuple(rows),
         body=body,
     )
 
 
-def parse_o2(body: bytes) -> Snapshot:
+def parse_o2(body: bytes, source_ordinal: int) -> Snapshot:
     if len(body) != O2_LENGTH:
         raise ValueError(f"O2 body length {len(body)} != {O2_LENGTH}")
     metadata = base_metadata(body)
@@ -255,6 +264,7 @@ def parse_o2(body: bytes) -> Snapshot:
                 "horse_no_1": str(horse_1),
                 "horse_no_2": str(horse_2),
                 "quinella_odds": odds,
+                "raw_odds": odds_raw,
             }
         )
     return Snapshot(
@@ -264,6 +274,7 @@ def parse_o2(body: bytes) -> Snapshot:
         race_no=str(metadata["race_no"]),
         race_id=str(metadata["race_id"]),
         snapshot_dt=metadata["snapshot_dt"],  # type: ignore[arg-type]
+        source_ordinal=source_ordinal,
         rows=tuple(rows),
         body=body,
     )
@@ -287,15 +298,20 @@ def discover_rtds(inputs: Iterable[Path]) -> list[Path]:
 
 def read_snapshots(inputs: Iterable[Path]) -> list[Snapshot]:
     unique: dict[tuple[str, bytes], Snapshot] = {}
+    source_ordinal = 0
     for path in discover_rtds(inputs):
         for entry in read_local_zip_entries(path):
             body = body_from_entry(entry)
             if body.startswith(b"O1"):
-                snapshot = parse_o1(body)
+                source_ordinal += 1
+                snapshot = parse_o1(body, source_ordinal)
             elif body.startswith(b"O2"):
-                snapshot = parse_o2(body)
+                source_ordinal += 1
+                snapshot = parse_o2(body, source_ordinal)
             else:
                 continue
+            # RTDs are cumulative. Collapse byte-identical copies while
+            # retaining the last observed position for deterministic ordering.
             unique[(snapshot.dataspec, body)] = snapshot
 
     snapshots = sorted(
@@ -306,20 +322,9 @@ def read_snapshots(inputs: Iterable[Path]) -> list[Snapshot]:
             item.race_no,
             item.dataspec,
             item.snapshot_dt,
-            item.body,
+            item.source_ordinal,
         ),
     )
-    # Refuse ambiguous same-time snapshots with different bodies instead of
-    # choosing one arbitrarily during T-minus selection.
-    seen: dict[tuple[str, str, datetime], bytes] = {}
-    for snap in snapshots:
-        key = (snap.dataspec, snap.race_id, snap.snapshot_dt)
-        previous = seen.setdefault(key, snap.body)
-        if previous != snap.body:
-            raise ValueError(
-                f"conflicting {snap.dataspec} records for {snap.race_id} "
-                f"at {snap.snapshot_dt.isoformat()}"
-            )
     return snapshots
 
 
@@ -460,6 +465,7 @@ def main() -> int:
             return 0
 
         manifest: list[dict[str, str]] = []
+        selection_rule = "strict_prior_minute_latest_record"
         for (race_date, track_code, race_no, dataspec), group in sorted(groups.items()):
             race_id = group[0].race_id
             suffix = "o1" if dataspec == "0B41" else "o2"
@@ -476,6 +482,10 @@ def main() -> int:
                             "lag_seconds": "",
                             "selection_status": "missing_post_time",
                             "row_count": "0",
+                            "same_minute_conflict_count": "0",
+                            "selected_record_ordinal": "",
+                            "raw_snapshot_count_at_selected_minute": "0",
+                            "selection_rule": selection_rule,
                         }
                     )
                 continue
@@ -483,7 +493,10 @@ def main() -> int:
                 raise ValueError(f"schedule date mismatch for {race_id}: {post_dt}")
             for minutes in targets:
                 target_dt = post_dt - timedelta(minutes=minutes)
-                eligible = [snap for snap in group if snap.snapshot_dt <= target_dt]
+                # Announcement timestamps have minute precision. Exclude the
+                # target minute itself so a record published up to 59 seconds
+                # after the true target instant can never leak into selection.
+                eligible = [snap for snap in group if snap.snapshot_dt < target_dt]
                 if not eligible:
                     manifest.append(
                         {
@@ -493,12 +506,24 @@ def main() -> int:
                             "target_datetime": target_dt.strftime("%Y-%m-%d %H:%M:%S"),
                             "selected_snapshot_time": "",
                             "lag_seconds": "",
-                            "selection_status": "no_snapshot_at_or_before_target",
+                            "selection_status": "no_snapshot_strictly_before_target",
                             "row_count": "0",
+                            "same_minute_conflict_count": "0",
+                            "selected_record_ordinal": "",
+                            "raw_snapshot_count_at_selected_minute": "0",
+                            "selection_rule": selection_rule,
                         }
                     )
                     continue
-                selected = max(eligible, key=lambda snap: snap.snapshot_dt)
+                selected_minute = max(snap.snapshot_dt for snap in eligible)
+                same_minute = sorted(
+                    (snap for snap in eligible if snap.snapshot_dt == selected_minute),
+                    key=lambda snap: snap.source_ordinal,
+                )
+                selected = same_minute[-1]
+                selected_record_ordinal = len(same_minute)
+                raw_snapshot_count = len(same_minute)
+                same_minute_conflict_count = max(0, raw_snapshot_count - 1)
                 lag_seconds = int((target_dt - selected.snapshot_dt).total_seconds())
                 target_rows = [
                     {
@@ -522,14 +547,19 @@ def main() -> int:
                         "target_datetime": target_dt.strftime("%Y-%m-%d %H:%M:%S"),
                         "selected_snapshot_time": selected.snapshot_dt.strftime("%Y-%m-%d %H:%M:%S"),
                         "lag_seconds": str(lag_seconds),
-                        "selection_status": "selected_prior_snapshot",
+                        "selection_status": "selected_strict_prior_minute",
                         "row_count": str(len(target_rows)),
+                        "same_minute_conflict_count": str(same_minute_conflict_count),
+                        "selected_record_ordinal": str(selected_record_ordinal),
+                        "raw_snapshot_count_at_selected_minute": str(raw_snapshot_count),
+                        "selection_rule": selection_rule,
                     }
                 )
                 print(
                     f"SELECT {dataspec} race_id={race_id} T-{minutes} "
                     f"target={target_dt:%H:%M:%S} selected={selected.snapshot_dt:%H:%M:%S} "
-                    f"lag_seconds={lag_seconds} rows={len(target_rows)} file={target_path}"
+                    f"lag_seconds={lag_seconds} ordinal={selected_record_ordinal}/"
+                    f"{raw_snapshot_count} rows={len(target_rows)} file={target_path}"
                 )
 
         manifest_columns = [
@@ -541,6 +571,10 @@ def main() -> int:
             "lag_seconds",
             "selection_status",
             "row_count",
+            "same_minute_conflict_count",
+            "selected_record_ordinal",
+            "raw_snapshot_count_at_selected_minute",
+            "selection_rule",
         ]
         manifest_path = write_csv_new(
             args.output_dir,
